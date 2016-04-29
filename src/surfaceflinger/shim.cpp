@@ -12,8 +12,8 @@
 #include <gui/Surface.h>
 #include <ui/PixelFormat.h>
 
-//#define WIDTH_OVERRIDE 1440
-//#define HEIGHT_OVERRIDE 2560
+static uint32_t width_override;
+static uint32_t height_override;
 
 #define LOG(...)
 #ifndef LOG
@@ -86,12 +86,8 @@ int Shim::createSurface(int32_t left, int32_t top, uint32_t width,
                         uint32_t height) {
   uint32_t flags = 0;
 
-#ifdef WIDTH_OVERRIDE
-  width = WIDTH_OVERRIDE;
-#endif
-#ifdef HEIGHT_OVERRIDE
-  height = HEIGHT_OVERRIDE;
-#endif
+  width = width_override ? width_override : width;
+  height = height_override ? height_override : height;
 
   auto surface_control =
       composer_client_->createSurface(android::String8("ozone"), width, height,
@@ -130,6 +126,15 @@ bool ShimInitialize(void) {
   LOG("ShimInitialize\n");
   // TODO: necessary?
   android::ProcessState::self()->startThreadPool();
+
+  if (char *str = getenv("SHIM_WIDTH")) {
+    width_override = atoi(str);
+    LOG("got SHIM_WIDTH %u\n", width_override);
+  }
+  if (char *str = getenv("SHIM_HEIGHT")) {
+    height_override = atoi(str);
+    LOG("got SHIM_HEIGHT %u\n", height_override);
+  }
 
   if (!the_shim) {
     the_shim = new Shim();
